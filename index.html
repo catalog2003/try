@@ -1,50 +1,209 @@
+
+Arasanpanbu
+/
+imgtopdf
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+imgtopdf/index.html
+@Arasanpanbu
+Arasanpanbu Create index.html
+ 1 contributor
+192 lines (165 sloc)  6.45 KB
 <!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>jsPDF Image to PDF From file</title>
-</head>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Title | Image to PDF Converter</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Image to PDF Converter" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<meta property="og:description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<link rel="canonical" href="/" />
+<meta property="og:url" content="/" />
+<meta property="og:site_name" content="Image to PDF Converter" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Image to PDF Converter" />
+<script type="application/ld+json">
+{"@type":"WebSite","url":"/","headline":"Image to PDF Converter","description":"Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.","name":"Image to PDF Converter","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="_site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="Image to PDF Converter" /></head>
+
+<!-- Bootstrap core CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+		
+		<!-- Custom CSS -->
+		<style>
+			.pull-right {
+				float:right;
+			}
+			
+			#previewImages {
+				display: block;
+				height: 250px;
+				margin-bottom: 10px;
+				border: 3px solid #0d6efd;
+				background: transparent;
+				overflow-y: scroll;
+				border-radius: 5px;
+			}
+			
+			#previewImages img {
+				    display: block;
+					float: left;
+					padding: 2px;
+					width: 100px;
+					height: 100px;
+					border: 2px solid #0d6efd;
+					margin: 2px;
+					border-radius: 5px;
+			}
+			
+			.btn {
+			  border: none;
+			  color: white;
+			  padding: 15px 30px;
+			  text-align: center;
+			  font-size: 16px;
+			}
+			
+			.btn-file {
+				position: relative;
+				overflow: hidden;
+			}
+			.btn-file input[type=file] {
+				position: absolute;
+				top: 0;
+				right: 0;
+				min-width: 100%;
+				min-height: 100%;
+				font-size: 100px;
+				text-align: right;
+				filter: alpha(opacity=0);
+				opacity: 0;
+				outline: none;
+				background: white;
+				cursor: inherit;
+				display: block;
+			}
+			
+		</style>
+		
+		<!-- PDFLib JS -->
+		<script src="https://unpkg.com/pdf-lib@1.4.0"></script>
+		
+		<!-- PDFDownload JS -->
+		<script src="https://unpkg.com/downloadjs@1.4.7"></script>
+		
+		<!-- CUSTOM JS -->
+		<script type="text/javascript">
+			// Getting Individual Image URL's
+			var imageURL = [];
+			
+			// Choose Multiple Images and Preview
+			function previewFiles() {				
+				var preview = document.querySelector('#previewImages');
+				var files   = document.querySelector('input[type=file]').files;				
+				// Preview upload Images
+				function readAndPreview(file) {
+					// Make sure `file.name` matches our extensions criteria
+					if ( /\.(jpe?g|png|gif)$/i.test(file.name) ) {
+						var reader = new FileReader();
+
+						reader.addEventListener("load", function () {					    
+							var image = new Image();
+							image.title = file.name;
+							image.src = this.result;
+							preview.appendChild( image );
+							// Pushing to all imageURL's
+							imageURL.push(this.result);
+						}, false);
+						
+						reader.readAsDataURL(file);
+					}
+				}				
+				//Recusive Loop
+				if (files) {
+					[].forEach.call(files, readAndPreview);
+				}
+			}			
+		
+			// Image convert into PDF format using PDFLib
+			var { PDFDocument } = PDFLib
+			async function embedImages() {
+				// Create a new PDFDocument
+				var pdfDoc = await PDFDocument.create()
+				
+				// Recusive loop to read images
+				for (var i=0; i<imageURL.length; i++){				
+					var imageBytes = await fetch(imageURL[i]).then((res) => res.arrayBuffer())
+					
+					// Fetch Image Type
+					var imageType = imageURL[i].split(";",1);
+					
+					// To Find Image Type
+					if(imageType == "data:image/jpeg") {
+						var embedImage = await pdfDoc.embedJpg(imageBytes)
+					} else {
+						var embedImage = await pdfDoc.embedPng(imageBytes)
+					}
+					
+					// Get the width/height of the image scaled down to 25% of its original size
+					var imageDims = (embedImage).scale(0.5)
+					
+					// Add a blank page to the document
+					var page = pdfDoc.addPage()
+					
+					// Draw the image in the center of the page
+					page.drawImage(embedImage, {
+						x: page.getWidth() / 2 - imageDims.width / 2,
+						y: page.getHeight() / 2 - imageDims.height / 2,
+						width: imageDims.width,
+						height: imageDims.height,
+					})
+				}
+				// Serialize the PDFDocument to bytes (a Uint8Array)
+				var pdfBytes = await pdfDoc.save()			
+				// Trigger the browser to download the PDF document
+				download(pdfBytes, "ImageToPdf.pdf", "application/pdf");
+			}
+		</script>
 <body>
-	<input type="file" name="" id="imageFile">
-	<canvas  id="canvas" style="width: 400px; height: 400px;"></canvas>
-	<button id="button">Download PDF</button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.0/html2canvas.min.js"></script>
-<script type="text/javascript">
-	var imageFile = document.getElementById("imageFile")
-	var canvas = document.getElementById("canvas")
-	var button = document.getElementById("button")
-	button.onclick = handleImageToPdf
-	function handleImageToPdf(){
-		html2canvas(canvas, {
-			onrendered: function(canvas){
-				var imgData = canvas.toDataURL('image/png');
-				var doc = new jsPDF('p', 'mm');
-				doc.addImage(imgData,'PNG', 10, 10);
-				doc.save('sologyan.pdf');
-			}
-		});
-	}
-	var ctx = canvas.getContext('2d')
-	imageFile.addEventListener("change", handleImage, false)
-	function handleImage(e){
-		console.log(e)
-		var reader = new FileReader 
-		// Listen for reader event
-		reader.onload = function(event){
-			var image = new Image()
-			image.onload = function(){
-				canvas.width = image.width
-				canvas.height = image.height
-				ctx.drawImage(image,0,0) 
-			}
-			image.src = event.target.result
-		}
-		reader.readAsDataURL(e.target.files[0]);
+<header class="site-header" role="banner">
+	<div class="wrapper">
+		<a href="#" class="navbar-brand d-flex align-items-center">
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true" class="me-2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+			<strong>Image to PDF Converter</strong>
+		</a>
+	</div>
+</header>
 
-	}
-</script>
+<main class="page-content" aria-label="Content">
+    <div class="wrapper">
+        
+		<div id="previewImages"></div>
+		<div class="pull-right">
+			<span class="btn btn-primary btn-file"> CHOOSE FILES <input id="browse" class="btn" type="file" onchange="previewFiles()" multiple> </span>			
+			<button class="btn btn-success" onclick="embedImages()">CONVERT TO PDF</button>
+		</div>
+    </div>
+</main>
+
+<footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+  </div>
+
+</footer>
 </body>
+
 </html>
